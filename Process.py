@@ -1,13 +1,18 @@
 import os
+import sys
 import glob
 import soundfile
 from typing import Union, Optional
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from .utils.Load_Media import Loader
-from .utils.Denoise_Audio import Denoiser
-from .utils.Slice_Audio import Slicer
+from pathlib import Path
+current_dir = Path(__file__).absolute().parent.as_posix()
+sys.path.insert(0, f"{current_dir}")
+os.chdir(current_dir)
+
+from utils.Load_Media import Loader
+from utils.Denoise_Audio import Denoiser
+from utils.Slice_Audio import Slicer
 
 
 class Audio_Processing:
