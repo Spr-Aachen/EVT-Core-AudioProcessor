@@ -41,6 +41,9 @@ def uvr(
         )
     except:
         traceback.print_exc()
+        data, sr = AudioData, SampleRate
+    else:
+        data, sr = data.T if len(data.shape) > 1 else data, samplerate
     finally:
         os.remove(tmp_path)
         if ModelPath == "onnx_dereverb_By_FoxJoy":
@@ -50,7 +53,7 @@ def uvr(
             del pre_fun.model
             del pre_fun
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
-        return data.T if len(data.shape) > 1 else data, samplerate
+        return data, sr
 
 
 def Denoiser(
