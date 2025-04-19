@@ -4,7 +4,7 @@ from pydub import AudioSegment
 from typing import Optional
 
 
-def Loader(
+def loader(
     Path: str,
     SR: Optional[float] = 22050.,
     Mono: bool = True

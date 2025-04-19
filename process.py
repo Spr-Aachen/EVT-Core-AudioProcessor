@@ -10,9 +10,9 @@ current_dir = Path(__file__).absolute().parent.as_posix()
 sys.path.insert(0, f"{current_dir}")
 os.chdir(current_dir)
 
-from utils.Load_Media import Loader
-from utils.Denoise_Audio import Denoiser
-from utils.Slice_Audio import Slicer
+from utils.loadMedia import loader
+from utils.denoiseAudio import denoiser
+from utils.sliceAudio import Slicer
 
 
 class Audio_Processing:
@@ -68,7 +68,7 @@ class Audio_Processing:
 
         os.makedirs(self.Media_Dir_Output, exist_ok = True)
 
-    def GetPatterns(self,
+    def getPatterns(self,
         Directory: str,
         Extensions: list
     ):
@@ -79,12 +79,12 @@ class Audio_Processing:
 
         return PatternList
 
-    def ProcessMedia(self,
+    def processMedia(self,
         Media_Name_Input: str
     ):
         '''
-        Loader: Load audio from media files which supported by ffmpeg.
-        Denoiser: WIP
+        loader: Load audio from media files which supported by ffmpeg.
+        denoiser: WIP
         Slicer: Once the valid (sound) part reached min length since last slice and a silent part longer than min interval are detected, the audio will be sliced apart from the frame(s) with the lowest RMS value within the silent area.
         Long silence parts may be deleted.
         '''
@@ -97,13 +97,13 @@ class Audio_Processing:
         Media_Name_Output = os.path.splitext(os.path.basename(Media_Name_Input))[0] + '.' + self.Media_Format_Output
         Media_Path_Output = os.path.join(self.Media_Dir_Output, Media_Name_Output)
         Audio_Name_Input, Audio_Path_Input = Media_Name_Output, Media_Path_Output
-        AudioData, SampleRate = Loader(Path = Media_Name_Input, SR = self.SampleRate, Mono = self.ToMono)
+        AudioData, SampleRate = loader(Path = Media_Name_Input, SR = self.SampleRate, Mono = self.ToMono)
 
         WriteParamsList = [(Audio_Path_Input, AudioData.T if len(AudioData.shape) > 1 else AudioData, int(SampleRate))] # .T: Swap axes if the audio is stereo
 
         if self.Denoise_Audio:
             WriteParamsList.clear()
-            AudioData, SampleRate = Denoiser(
+            AudioData, SampleRate = denoiser(
                 AudioData,
                 SampleRate,
                 ModelPath = self.DenoiseModel_Path,
@@ -142,13 +142,13 @@ class Audio_Processing:
                 subtype = str(self.SubtypeDict.get(self.SampleWidth)) if self.SampleWidth is not None else None
             )
 
-    def Process_Audio(self):
+    def processAudio(self):
         print('Processing media...')
 
         with ThreadPoolExecutor(max_workers = os.cpu_count() if not self.Denoise_Audio else 1) as Executor:
             Executor.map(
-                self.ProcessMedia,
-                self.GetPatterns(self.Media_Dir_Input, self.MediaExtensions)
+                self.processMedia,
+                self.getPatterns(self.Media_Dir_Input, self.MediaExtensions)
             )
 
         print('Finished processing.')

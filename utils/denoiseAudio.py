@@ -56,7 +56,7 @@ def uvr(
         return data, sr
 
 
-def Denoiser(
+def denoiser(
     AudioData,
     SampleRate,
     ModelPath,
