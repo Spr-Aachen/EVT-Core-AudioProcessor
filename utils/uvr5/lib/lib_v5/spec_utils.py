@@ -351,13 +351,23 @@ def spectrogram_to_wave_mt(spec, hop_length, mid_side, reverse, mid_side_b2):
 
 
 def cmb_spectrogram_to_wave(spec_m, mp, extra_bins_h=None, extra_bins=None):
+    # 提前将nan变为0
+    spec_m = np.where(np.isnan(spec_m), 0, spec_m)
+    if extra_bins_h is not None:
+        extra_bins_h = np.where(np.isnan(extra_bins_h), 0, extra_bins_h)
+    if extra_bins is not None:
+        extra_bins = np.where(np.isnan(extra_bins), 0, extra_bins)
+
     wave_band = {}
     bands_n = len(mp.param["band"])
     offset = 0
 
     for d in range(1, bands_n + 1):
         bp = mp.param["band"][d]
-        spec_s = np.ndarray(
+        # spec_s = np.ndarray(
+        #     shape=(2, bp["n_fft"] // 2 + 1, spec_m.shape[2]), dtype=complex
+        # )
+        spec_s = np.zeros(
             shape=(2, bp["n_fft"] // 2 + 1, spec_m.shape[2]), dtype=complex
         )
         h = bp["crop_stop"] - bp["crop_start"]
