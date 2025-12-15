@@ -21,10 +21,10 @@ class Audio_Processing:
     1. Denoise the audio
     2. Slice off the silent parts
     '''
-    MediaExtensions = ['*.flac', '*.wav', '*.mp3', '*.aac', '*.m4a', '*.wma', '*.aiff', '*.au', '*.ogg', '*.mp4', '*.flv', '*.mkv', '*.avi']
-    AudioExtensions = ['*.flac', '*.wav', '*.mp3', '*.aac', '*.m4a', '*.wma', '*.aiff', '*.au', '*.ogg']
+    mediaExtensions = ['*.flac', '*.wav', '*.mp3', '*.aac', '*.m4a', '*.wma', '*.aiff', '*.au', '*.ogg', '*.mp4', '*.flv', '*.mkv', '*.avi']
+    audioExtensions = ['*.flac', '*.wav', '*.mp3', '*.aac', '*.m4a', '*.wma', '*.aiff', '*.au', '*.ogg']
 
-    SubtypeDict = {
+    subtypeDict = {
         '8':          'PCM_8',
         '16':         'PCM_16',
         '24':         'PCM_24',
@@ -33,54 +33,54 @@ class Audio_Processing:
     }
 
     def __init__(self,
-        Media_Dir_Input: str,
-        Media_Format_Output: Optional[str] = 'wav',
-        SampleRate: Optional[Union[int, str]] = None,
-        SampleWidth: Optional[Union[int, str]] = None,
-        ToMono: bool = False,
-        Denoise_Audio: bool = True,
-        Denoise_Model_Path: str = "",
-        Denoise_Target: str = '',
-        Slice_Audio: bool = True,
-        RMS_Threshold: float = -40.,
-        Audio_Length_Min: int = 5000,
-        Silent_Interval_Min: int = 300,
-        Hop_Size: int = 10,
-        Silence_Kept_Max: int = 1000,
-        Media_Root_Output: str = "./",
-        Media_DirName_Output: str = "",
+        inputDir: str,
+        outputFormat: Optional[str] = 'wav',
+        sampleRate: Optional[Union[int, str]] = None,
+        sampleWidth: Optional[Union[int, str]] = None,
+        toMono: bool = False,
+        denoiseAudio: bool = True,
+        denoiseModelPath: str = "",
+        denoiseTarget: str = '',
+        sliceAudio: bool = True,
+        rmsThreshold: float = -40.,
+        audioLength: int = 5000,
+        silentInterval: int = 300,
+        hopSize: int = 10,
+        silenceKept: int = 1000,
+        outputRoot: str = "./",
+        outputDirName: str = "",
     ):
-        self.Media_Dir_Input = Media_Dir_Input
-        self.Media_Format_Output = Media_Format_Output.lower() if Media_Format_Output is not None else None
-        self.Denoise_Audio = Denoise_Audio
-        self.DenoiseModel_Path = Denoise_Model_Path
-        self.DenoiseTarget = Denoise_Target.replace('人声', 'vocals').replace('背景声', 'instrument')
-        self.Slice_Audio = Slice_Audio
-        self.RMS_Threshold = RMS_Threshold
-        self.Audio_Length_Min = Audio_Length_Min
-        self.Silent_Interval_Min = Silent_Interval_Min
-        self.Hop_Size = Hop_Size
-        self.Silence_Kept_Max = Silence_Kept_Max
-        self.SampleRate = eval(SampleRate) if SampleRate is not None else None
-        self.SampleWidth = str(SampleWidth) if SampleWidth is not None else None
-        self.ToMono = ToMono
-        self.Media_Dir_Output = Path(Media_Root_Output).joinpath(Media_DirName_Output).as_posix()
+        self.inputDir = inputDir
+        self.outputFormat = outputFormat.lower() if outputFormat is not None else None
+        self.denoiseAudio = denoiseAudio
+        self.denoiseModelPath = denoiseModelPath
+        self.denoiseTarget = denoiseTarget.lower().replace('人声', 'vocals').replace('背景声', 'instrument')
+        self.sliceAudio = sliceAudio
+        self.rmsThreshold = rmsThreshold
+        self.audioLength = audioLength
+        self.silentInterval = silentInterval
+        self.hopSize = hopSize
+        self.silenceKept = silenceKept
+        self.sampleRate = eval(sampleRate) if sampleRate is not None else None
+        self.sampleWidth = str(sampleWidth) if sampleWidth is not None else None
+        self.toMono = toMono
+        self.outputDir = Path(outputRoot).joinpath(outputDirName).as_posix()
 
-        os.makedirs(self.Media_Dir_Output, exist_ok = True)
+        os.makedirs(self.outputDir, exist_ok = True)
 
     def getPatterns(self,
-        Directory: str,
-        Extensions: list
+        directory: str,
+        extensions: list
     ):
-        PatternList = []
+        patternList = []
 
-        for Extension in Extensions:
-            PatternList.extend(glob.glob(Path(Directory).joinpath(Extension).as_posix()))
+        for extension in extensions:
+            patternList.extend(glob.glob(Path(directory).joinpath(extension).as_posix()))
 
-        return PatternList
+        return patternList
 
     def processMedia(self,
-        Media_Name_Input: str
+        filePath: str
     ):
         '''
         loader: Load audio from media files which supported by ffmpeg.
@@ -88,67 +88,67 @@ class Audio_Processing:
         Slicer: Once the valid (sound) part reached min length since last slice and a silent part longer than min interval are detected, the audio will be sliced apart from the frame(s) with the lowest RMS value within the silent area.
         Long silence parts may be deleted.
         '''
-        if self.Media_Format_Output is not None:
-            if f'*.{self.Media_Format_Output}'.lower() not in self.AudioExtensions:
-                raise Exception(f"Format '{self.Media_Format_Output}' is currently not supported!")
+        if self.outputFormat is not None:
+            if f'*.{self.outputFormat}'.lower() not in self.audioExtensions:
+                raise Exception(f"Format '{self.outputFormat}' is currently not supported!")
         else:
-            self.Media_Format_Output = Path(Media_Name_Input).suffix.strip('.')
+            self.outputFormat = Path(filePath).suffix.strip('.')
 
-        Media_Name_Output = os.path.splitext(os.path.basename(Media_Name_Input))[0] + '.' + self.Media_Format_Output
-        Media_Path_Output = os.path.join(self.Media_Dir_Output, Media_Name_Output)
-        Audio_Name_Input, Audio_Path_Input = Media_Name_Output, Media_Path_Output
-        AudioData, SampleRate = loader(Path = Media_Name_Input, SR = self.SampleRate, Mono = self.ToMono)
+        outputName_media = os.path.splitext(os.path.basename(filePath))[0] + '.' + self.outputFormat
+        outputPath_media = os.path.join(self.outputDir, outputName_media)
+        inputName_audio, inputPath_audio = outputName_media, outputPath_media
+        audioData, sampleRate = loader(path = filePath, sr = self.sampleRate, mono = self.toMono)
 
-        WriteParamsList = [(Audio_Path_Input, AudioData.T if len(AudioData.shape) > 1 else AudioData, int(SampleRate))] # .T: Swap axes if the audio is stereo
+        writeParamsList = [(inputPath_audio, audioData.T if len(audioData.shape) > 1 else audioData, int(sampleRate))] # .T: Swap axes if the audio is stereo
 
-        if self.Denoise_Audio:
-            WriteParamsList.clear()
-            AudioData, SampleRate = denoiser(
-                AudioData,
-                SampleRate,
-                ModelPath = self.DenoiseModel_Path,
-                Target = self.DenoiseTarget
+        if self.denoiseAudio:
+            writeParamsList.clear()
+            audioData, sampleRate = denoiser(
+                audioData,
+                sampleRate,
+                modelPath = self.denoiseModelPath,
+                target = self.denoiseTarget
             )
-            Audio_Name_Output = Audio_Name_Input.rsplit('.', 1)[0] + '_Denoised_' + '.' + self.Media_Format_Output
-            Audio_Path_Output = os.path.normpath(os.path.join(self.Media_Dir_Output, Audio_Name_Output))
-            WriteParamsList.append((Audio_Path_Output, AudioData.T if len(AudioData.shape) > 1 else AudioData, int(SampleRate)))
+            outputName_audio = inputName_audio.rsplit('.', 1)[0] + '_Denoised_' + '.' + self.outputFormat
+            outputPath_audio = os.path.normpath(os.path.join(self.outputDir, outputName_audio))
+            writeParamsList.append((outputPath_audio, audioData.T if len(audioData.shape) > 1 else audioData, int(sampleRate)))
 
-        if self.Slice_Audio:
+        if self.sliceAudio:
             slicer = Slicer(
-                Sampling_Rate = SampleRate,
-                RMS_Threshold = self.RMS_Threshold,
-                Audio_Length_Min = self.Audio_Length_Min,
-                Silent_Interval_Min = self.Silent_Interval_Min,
-                Hop_Size = self.Hop_Size,
-                Silence_Kept_Max = self.Silence_Kept_Max
+                samplingRate = sampleRate,
+                rmsThreshold = self.rmsThreshold,
+                audioLength_min = self.audioLength,
+                silentInterval_min = self.silentInterval,
+                hopSize = self.hopSize,
+                silenceKept_max = self.silenceKept
             )
-            chunks, IsSlicingNeeded = slicer.slice(AudioData)
-            if IsSlicingNeeded == True:
-                WriteParamsList.clear()
+            chunks, isSlicingNeeded = slicer.slice(audioData)
+            if isSlicingNeeded == True:
+                writeParamsList.clear()
                 for i, chunk in enumerate(chunks):
-                    Audio_Name_Output = Audio_Name_Input.rsplit('.', 1)[0] + f'_Sliced_{i}' + '.' + self.Media_Format_Output
-                    Audio_Path_Output = os.path.normpath(os.path.join(self.Media_Dir_Output, Audio_Name_Output))
-                    WriteParamsList.append((Audio_Path_Output, chunk.T if len(chunk.shape) > 1 else chunk, int(SampleRate)))
+                    outputName_audio = inputName_audio.rsplit('.', 1)[0] + f'_Sliced_{i}' + '.' + self.outputFormat
+                    outputPath_audio = os.path.normpath(os.path.join(self.outputDir, outputName_audio))
+                    writeParamsList.append((outputPath_audio, chunk.T if len(chunk.shape) > 1 else chunk, int(sampleRate)))
                 try:
-                    os.remove(Audio_Path_Input)
+                    os.remove(inputPath_audio)
                 except OSError:
                     pass
             else:
                 pass
 
-        for WriteParams in WriteParamsList:
+        for WriteParams in writeParamsList:
             soundfile.write(
                 *WriteParams,
-                subtype = str(self.SubtypeDict.get(self.SampleWidth)) if self.SampleWidth is not None else None
+                subtype = str(self.subtypeDict.get(self.sampleWidth)) if self.sampleWidth is not None else None
             )
 
     def processAudio(self):
         print('Processing media...')
 
-        with ThreadPoolExecutor(max_workers = os.cpu_count() if not self.Denoise_Audio else 1) as Executor:
+        with ThreadPoolExecutor(max_workers = os.cpu_count() if not self.denoiseAudio else 1) as Executor:
             Executor.map(
                 self.processMedia,
-                self.getPatterns(self.Media_Dir_Input, self.MediaExtensions)
+                self.getPatterns(self.inputDir, self.mediaExtensions)
             )
 
         print('Finished processing.')

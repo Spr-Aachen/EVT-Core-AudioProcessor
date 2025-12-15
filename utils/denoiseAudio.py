@@ -10,43 +10,43 @@ from .uvr5.vr import AudioPre, AudioPreDeEcho
 
 
 def uvr(
-    AudioData,
-    SampleRate,
-    ModelPath,
-    Target,
-    Agg
+    audioData,
+    sampleRate,
+    modelPath,
+    target,
+    agg
 ):
     try:
-        if "onnx_dereverb_by_foxjoy" in ModelPath.lower() and Path(ModelPath).suffix == ".onnx":
+        if "onnx_dereverb_by_foxjoy" in modelPath.lower() and Path(modelPath).suffix == ".onnx":
             pre_fun = MDXNetDereverb(
-                model_path = ModelPath,
+                model_path = modelPath,
                 chunks = 15
             )
         else:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            func = AudioPre if "DeEcho" not in Path(ModelPath).stem else AudioPreDeEcho
+            func = AudioPre if "DeEcho" not in Path(modelPath).stem else AudioPreDeEcho
             pre_fun = func(
-                agg = int(Agg),
-                model_path = ModelPath,
+                agg = int(agg),
+                model_path = modelPath,
                 device = device,
                 is_half = False,
             )
         tmp_path = Path(os.getcwd()).joinpath("tmp.wav").as_posix()
-        AudioData = librosa.resample(AudioData, orig_sr = SampleRate, target_sr = 44100)
-        soundfile.write(tmp_path, AudioData.T if len(AudioData.shape) > 1 else AudioData, 44100, subtype = 'PCM_16')
+        audioData = librosa.resample(audioData, orig_sr = sampleRate, target_sr = 44100)
+        soundfile.write(tmp_path, audioData.T if len(audioData.shape) > 1 else audioData, 44100, subtype = 'PCM_16')
         data, samplerate = pre_fun._path_audio_(
             path = tmp_path,
-            target = Target,
-            is_hp3 = "hp3" in Path(ModelPath).stem.lower()
+            target = target,
+            is_hp3 = "hp3" in Path(modelPath).stem.lower()
         )
     except:
         traceback.print_exc()
-        data, sr = AudioData, SampleRate
+        data, sr = audioData, sampleRate
     else:
         data, sr = data.T if len(data.shape) > 1 else data, samplerate
     finally:
         os.remove(tmp_path)
-        if ModelPath == "onnx_dereverb_By_FoxJoy":
+        if modelPath == "onnx_dereverb_By_FoxJoy":
             del pre_fun.pred.model
             del pre_fun.pred.model_
         else:
@@ -57,23 +57,16 @@ def uvr(
 
 
 def denoiser(
-    AudioData,
-    SampleRate,
-    ModelPath,
-    Target = "voice", # 指定要保留人声还是背景音
-    #Agg = 10 # 人声提取激进程度(0-20, step=1)
+    audioData,
+    sampleRate,
+    modelPath,
+    target = "vocals", # 指定要保留人声还是背景音
+    #agg = 10 # 人声提取激进程度(0-20, step=1)
 ):
-    '''
-    ModelName_Map = {
-        "不带和声": "HP3_all_vocals",
-        "带和声": "HP5_only_main_vocal",
-    }
-    ModelName = ModelName_Map.get(AudioType, "HP3_all_vocals")
-    '''
     return uvr(
-        AudioData,
-        SampleRate,
-        ModelPath,
-        Target = Target,
-        Agg = 10
+        audioData,
+        sampleRate,
+        modelPath,
+        target = target,
+        agg = 10
     )
