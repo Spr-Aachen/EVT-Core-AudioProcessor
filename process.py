@@ -33,7 +33,7 @@ class Audio_Processing:
     }
 
     def __init__(self,
-        inputDir: str,
+        inputMedia: str,
         outputFormat: Optional[str] = 'wav',
         sampleRate: Optional[Union[int, str]] = None,
         sampleWidth: Optional[Union[int, str]] = None,
@@ -50,7 +50,7 @@ class Audio_Processing:
         outputRoot: str = "./",
         outputDirName: str = "",
     ):
-        self.inputDir = inputDir
+        self.inputMedia = inputMedia
         self.outputFormat = outputFormat.lower() if outputFormat is not None else None
         self.denoiseAudio = denoiseAudio
         self.denoiseModelPath = denoiseModelPath
@@ -148,7 +148,7 @@ class Audio_Processing:
         with ThreadPoolExecutor(max_workers = os.cpu_count() if not self.denoiseAudio else 1) as Executor:
             Executor.map(
                 self.processMedia,
-                self.getPatterns(self.inputDir, self.mediaExtensions)
+                self.getPatterns(self.inputMedia, self.mediaExtensions) if Path(self.inputMedia).is_dir() else [self.inputMedia]
             )
 
         print('Finished processing.')
